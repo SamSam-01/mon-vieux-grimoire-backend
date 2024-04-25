@@ -19,6 +19,41 @@ exports.createBook = (req, res, next) => {
   .catch(error => { res.status(400).json( { error: error.toString() })})
 };
 
+exports.rateBook = (req, res, next) => {
+  const userId = req.auth.userId;
+  const rating = req.body.rating;
+
+  if (rating < 0 || rating > 5) {
+    return res.status(400).json({ message: 'La note doit être comprise entre 0 et 5.' });
+  }
+
+  Book.findOne({ _id: req.params.id })
+    .then(book => {
+      const userRating = book.ratings.find(r => r.userId.toString() === userId);
+      if (userRating) {
+        return res.status(400).json({ message: 'Un utilisateur ne peut pas noter deux fois le même livre.' });
+      }
+
+      book.ratings.push({ userId, grade: rating });
+
+      const totalRating = book.ratings.reduce((total, r) => total + r.grade, 0);
+      book.averageRating = totalRating / book.ratings.length;
+
+      return book.save()
+        .then(() => res.status(200).json(book))
+        .catch(error => res.status(500).json({ error }));
+    })
+    .catch(error => res.status(500).json({ error }));
+};
+
+exports.getBestRating = (req, res, next) => {
+  Book.find()
+    .sort({averageRating: -1})
+    .limit(3)
+    .then((books)=>res.status(200).json(books))
+    .catch((error)=>res.status(404).json({ error }));
+};
+
 exports.deleteBook = (req, res, next) => {
   Book.findOne({ _id: req.params.id})
       .then(book => {
