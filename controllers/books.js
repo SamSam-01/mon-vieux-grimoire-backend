@@ -13,7 +13,6 @@ exports.createBook = (req, res, next) => {
       imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
   });
 
-  console.log(JSON.stringify(book));
   book.save()
   .then(() => { res.status(201).json({message: 'Le livre a été enregistré !'})})
   .catch(error => { res.status(400).json( { error: error.toString() })})
